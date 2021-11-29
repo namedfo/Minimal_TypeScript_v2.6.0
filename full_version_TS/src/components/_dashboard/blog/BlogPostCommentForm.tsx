@@ -1,0 +1,105 @@
+import * as Yup from 'yup';
+import { useFormik, Form, FormikProvider } from 'formik';
+import { useSnackbar } from 'notistack';
+// material
+import { styled } from '@mui/material/styles';
+import { Box, Typography, TextField } from '@mui/material';
+import { LoadingButton } from '@mui/lab';
+// utils
+import fakeRequest from '../../../utils/fakeRequest';
+
+// ----------------------------------------------------------------------
+
+const RootStyles = styled('div')(({ theme }) => ({
+  padding: theme.spacing(3),
+  borderRadius: theme.shape.borderRadiusMd,
+  backgroundColor: theme.palette.background.neutral
+}));
+
+// ----------------------------------------------------------------------
+
+type FormValues = {
+  comment: string;
+  name: string;
+  email: string;
+};
+
+export default function BlogPostCommentForm() {
+  const { enqueueSnackbar } = useSnackbar();
+
+  const CommentSchema = Yup.object().shape({
+    comment: Yup.string().required('Comment is required'),
+    name: Yup.string().required('Name is required'),
+    email: Yup.string().email('Email must be a valid email address').required('Email is required')
+  });
+
+  const formik = useFormik<FormValues>({
+    initialValues: {
+      comment: '',
+      name: '',
+      email: ''
+    },
+    validationSchema: CommentSchema,
+    onSubmit: async (values, { setSubmitting, resetForm, setErrors }) => {
+      try {
+        await fakeRequest(500);
+        resetForm();
+        setSubmitting(false);
+        enqueueSnackbar('Post success', { variant: 'success' });
+      } catch (error) {
+        console.error(error);
+        setSubmitting(false);
+        setErrors(error.code);
+      }
+    }
+  });
+
+  const { errors, touched, handleSubmit, isSubmitting, getFieldProps } = formik;
+
+  return (
+    <RootStyles>
+      <Typography variant="subtitle1" sx={{ mb: 3 }}>
+        Add Comment
+      </Typography>
+      <FormikProvider value={formik}>
+        <Form noValidate autoComplete="off" onSubmit={handleSubmit}>
+          <TextField
+            fullWidth
+            multiline
+            minRows={3}
+            maxRows={5}
+            label="Comment *"
+            {...getFieldProps('comment')}
+            error={Boolean(touched.comment && errors.comment)}
+            helperText={touched.comment && errors.comment}
+            sx={{ mb: 3 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Name *"
+            {...getFieldProps('name')}
+            error={Boolean(touched.name && errors.name)}
+            helperText={touched.name && errors.name}
+            sx={{ mb: 3 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Email *"
+            {...getFieldProps('email')}
+            error={Boolean(touched.email && errors.email)}
+            helperText={touched.email && errors.email}
+            sx={{ mb: 3 }}
+          />
+
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <LoadingButton type="submit" variant="contained" loading={isSubmitting}>
+              Post comment
+            </LoadingButton>
+          </Box>
+        </Form>
+      </FormikProvider>
+    </RootStyles>
+  );
+}
